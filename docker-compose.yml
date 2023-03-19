@@ -1,0 +1,15 @@
+version: "3.7"
+
+services:
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=braindb
+      - POSTGRES_USER=brainuser
+      - POSTGRES_PASSWORD=pass123
+    ports:
+      - '5432:5432'
+volumes:
+  dev-db-data:
