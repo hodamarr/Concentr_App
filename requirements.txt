@@ -3,3 +3,5 @@ djangorestframework
 markdown
 django-filter
 psycopg2
+drf_spectacular
+django-rest-swagger
