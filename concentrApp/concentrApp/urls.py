@@ -21,10 +21,20 @@ from drf_spectacular.views import (
 from django.contrib import admin
 from django.urls import path
 from django.urls import path, include
-
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs',),
-    path('api/user/', include('user.urls')),
+    path('auth/', include('accounts.urls')),
+    path('jwt/create/', TokenObtainPairView.as_view(), name="token_create"),
+    path('jwt/refresh/', TokenRefreshView.as_view(), name="token_refresh"),
+    path('jwt/verify/', TokenVerifyView.as_view(), name="token_verify"),
+    path('api/', include('application.urls')),
+    # path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
+    # path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs',),
+    # path('api/user/', include('user.urls')),
+    # path('api/experiments/', ExperimentsView.as_view(), name='experiments'),
 ]
