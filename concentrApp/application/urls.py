@@ -8,5 +8,10 @@ urlpatterns = [
     #     views.PostRetrieveUpdateDeleteView.as_view(),
     #     name="post_detail",
     # ),
-    path("participants/", views.ParticipantExperimentCreateView.as_view(), name="list_create_participants")
+    path("participants/", views.ParticipantExperimentCreateView.as_view(), name="list_create_participants"),
+    path("context/", views.ContextCreateView.as_view(), name="list_create_contexts"),
+    path("question/", views.QuestionCreateList.as_view(), name="list_create_questions"),
+    path('answer/', views.AnswerCreateListView.as_view(), name="list_create_answer"),
+
+
 ]

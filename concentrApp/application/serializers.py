@@ -21,3 +21,27 @@ class ParticipantExperimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParticipantExperiment
         fields = ['id', 'participant', 'experiment', 'created_at']
+
+
+class ContextSerializer(serializers.ModelSerializer):
+    experiment = ExperimentSerializer()
+
+    class Meta:
+        model = Context
+        fields = ['id', 'updated_at', 'created_at', 'name', 'description', 'experiment']
+
+
+class QuestionSerializer(serializers.ModelSerializer):
+    context = ContextSerializer()
+
+    class Meta:
+        model = Question
+        fields = ['id', 'description', 'updated_at', 'created_at', 'context']
+
+
+class AnswerSerializer(serializers.ModelSerializer):
+    question = QuestionSerializer()
+
+    class Meta:
+        model = Answer
+        fields = ['id', 'updated_at', 'created_at', 'text', 'question']
