@@ -3,6 +3,7 @@ from .models import User
 from rest_framework.validators import ValidationError
 from rest_framework.authtoken.models import Token
 
+
 class SignUpSerializers(serializers.ModelSerializer):
     email = serializers.CharField(max_length=80)
     username = serializers.CharField(max_length=20)
@@ -36,8 +37,7 @@ class CurrentUserExperimentsSerializer(serializers.ModelSerializer):
     Experiments = serializers.StringRelatedField(
         many=True
     )
+
     class Meta:
         model = User
         fields = ['id', 'username', 'email']
-
-

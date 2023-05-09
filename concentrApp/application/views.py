@@ -4,7 +4,7 @@ import string
 from .serializers import *
 from rest_framework.permissions import (
     IsAuthenticated,
-    BasePermission,
+    BasePermission, AllowAny,
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -15,7 +15,10 @@ class IsExperimentAdminPermission(BasePermission):
         return obj.exp_admin == request.user
 
 
-class ExperimentListCreateView(generics.GenericAPIView, mixins.ListModelMixin, mixins.CreateModelMixin):
+class ExperimentListCreateView(
+        generics.GenericAPIView,
+        mixins.ListModelMixin,
+        mixins.CreateModelMixin):
     serializer_class = ExperimentSerializer
     queryset = Experiment.objects.all()
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
@@ -59,20 +62,22 @@ class ContextCreateView(generics.GenericAPIView, mixins.CreateModelMixin):
         serializer = self.serializer_class(context)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
     def get(self, request):
         experiment_name = request.headers.get('experiment')
         try:
             experiment = Experiment.objects.get(name=experiment_name)
             data = Context.objects.filter(experiment=experiment)
         except Experiment.DoesNotExist as e:
-            return Response({"message": "Experiment does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Experiment does not exist"},
+                            status=status.HTTP_400_BAD_REQUEST)
         except Context.DoesNotExist as e:
-            return Response({"message": "context does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "context does not exist"},
+                            status=status.HTTP_400_BAD_REQUEST)
         return Response(
             {"message": "sucess",
              "data": [{"name": item.name, "description": item.description} for item in data]},
             status=status.HTTP_201_CREATED)
+
 
 class ParticipantExperimentCreateView(generics.GenericAPIView,
                                       mixins.CreateModelMixin):
@@ -86,8 +91,13 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
         except Experiment.DoesNotExist:
             return Response({'error': 'Experiment not found.'},
                             status=status.HTTP_404_NOT_FOUND)
-        participant_code = ''.join(r.choices(string.ascii_letters + string.digits, k=8))
-        participant = Participant.objects.create(participant_code=participant_code)
+        participant_code = ''.join(
+            r.choices(
+                string.ascii_letters +
+                string.digits,
+                k=8))
+        participant = Participant.objects.create(
+            participant_code=participant_code)
         participant.save()
 
         participant_experiment = ParticipantExperiment.objects.create(
@@ -95,7 +105,8 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
             experiment=experiment,
         )
         participant_experiment.save()
-        # todo: change to retun only {"paticipant_code": "blabla", "experiment": "blabla"}
+        # change to retun only {"paticipant_code": "blabla",
+        # "experiment": "blabla"}
         serializer = self.serializer_class(participant_experiment)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -107,13 +118,16 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
             return Response({'error': 'Experiment not found.'},
                             status=status.HTTP_404_NOT_FOUND)
 
-        experiment_participants = ParticipantExperiment.objects.filter(experiment=experiment)
-        participants = [i.participant.participant_code for i in experiment_participants]
-        return Response({'message': 'success', 'data': participants}, status.HTTP_200_OK)
+        experiment_participants = ParticipantExperiment.objects.filter(
+            experiment=experiment)
+        participants = [
+            i.participant.participant_code for i in experiment_participants]
+        return Response(
+            {'message': 'success', 'data': participants}, status.HTTP_200_OK)
 
 
 class QuestionCreateList(generics.GenericAPIView,
-                                      mixins.CreateModelMixin):
+                         mixins.CreateModelMixin):
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
 
@@ -122,14 +136,21 @@ class QuestionCreateList(generics.GenericAPIView,
         context_name = request.headers.get('context')
         try:
             experiment = Experiment.objects.get(name=experiment_name)
-            context = Context.objects.get(name=context_name, experiment=experiment)
+            context = Context.objects.get(
+                name=context_name, experiment=experiment)
         except Context.DoesNotExists as e:
-            return Response({'error': 'context not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'context not found.'},
+                            status=status.HTTP_404_NOT_FOUND)
         except Experiment.DoesNotExists as e:
-            return Response({'error': 'experiment not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'experiment not found.'},
+                            status=status.HTTP_404_NOT_FOUND)
         questions = Question.objects.filter(context=context)
-        return Response({'message': 'success', 'data': [{'id': i.id, 'description': i.description,
-                                                         'answers':[j.text for j in Answer.objects.filter(question=i)]} for i in questions]},
+        return Response({'message': 'success',
+                         'data': [{'id': i.id,
+                                   'description': i.description,
+                                   'answers': [{"id": j.id,
+                                                "text": j.text,
+                                                } for j in Answer.objects.filter(question=i)]} for i in questions]},
                         status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -138,20 +159,24 @@ class QuestionCreateList(generics.GenericAPIView,
             context_name = request.data.get('context')
             description = request.data.get('description')
             experiment = Experiment.objects.get(name=experiment_name)
-            context = Context.objects.get(name=context_name, experiment=experiment)
+            context = Context.objects.get(
+                name=context_name, experiment=experiment)
         except Context.DoesNotExists as e:
-            return Response({'error': 'context not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'context not found.'},
+                            status=status.HTTP_404_NOT_FOUND)
         except Experiment.DoesNotExists as e:
-            return Response({'error': 'experiment not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'experiment not found.'},
+                            status=status.HTTP_404_NOT_FOUND)
 
-        question = Question.objects.create(context=context, description=description)
+        question = Question.objects.create(
+            context=context, description=description)
         question.save()
         serializer = self.serializer_class(question)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class AnswerCreateListView(generics.GenericAPIView,
-                                      mixins.CreateModelMixin):
+                           mixins.CreateModelMixin):
     serializer_class = AnswerSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
 
@@ -169,4 +194,41 @@ class AnswerCreateListView(generics.GenericAPIView,
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Question.DoesNotExist as e:
-            return Response({'error': 'question not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'question not found'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+
+class ParticipantSubmissionView(generics.GenericAPIView,
+                            mixins.CreateModelMixin):
+    serializer_class = ParticipantSubmissionSerializer
+    authentication_classes = []  # remove authentication requirement
+    permission_classes = [AllowAny]  # allow any user to access the view
+
+
+    def post(self, request):
+        try:
+            participant_code = request.data.get('participant')
+            context_id = request.data.get('context')
+            question_id = request.data.get('question')
+            answer_id = request.data.get('answer')
+
+            participant = Participant.objects.get(
+                participant_code=participant_code)
+            context = Context.objects.get(id=context_id)
+            question = Question.objects.get(id=question_id)
+            answer = Answer.objects.get(id=answer_id)
+
+            participant_submittion = ParticipantSubmission.objects.create(
+                participant=participant,
+                context=context,
+                question=question,
+                answer=answer
+            )
+
+            participant_submittion.save()
+
+            serializer = self.serializer_class(participant_submittion)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except:
+            return Response({"error": "error"}, status=status.HTTP_404_NOT_FOUND)

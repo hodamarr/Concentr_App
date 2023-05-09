@@ -28,7 +28,13 @@ class ContextSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Context
-        fields = ['id', 'updated_at', 'created_at', 'name', 'description', 'experiment']
+        fields = [
+            'id',
+            'updated_at',
+            'created_at',
+            'name',
+            'description',
+            'experiment']
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -45,3 +51,17 @@ class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
         fields = ['id', 'updated_at', 'created_at', 'text', 'question']
+
+
+class ParticipantSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParticipantSubmission
+        fields = [
+            'id',
+            'created_at',
+            'updated_at',
+            'participant',
+            'context',
+            'question',
+            'answer']
+        read_only_fields = ['id', 'created_at', 'updated_at']

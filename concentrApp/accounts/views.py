@@ -8,10 +8,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .token import create_jwt_pair_for_user
 
+
 class SignUpView(generics.GenericAPIView):
     serializer_class = SignUpSerializers
     permission_classes = []
-
 
     def post(self, request: Request):
         data = request.data
@@ -24,7 +24,9 @@ class SignUpView(generics.GenericAPIView):
                                   "data": serializer.data},
                             status=status.HTTP_201_CREATED)
 
-        return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            data=serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(APIView):
@@ -51,4 +53,7 @@ class LoginView(APIView):
                 "token": tokens
             }
             return Response(data=resp, status=status.HTTP_200_OK)
-        return Response(data={"message": "invalid email or password"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            data={
+                "message": "invalid email or password"},
+            status=status.HTTP_404_NOT_FOUND)
