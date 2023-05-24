@@ -9,6 +9,7 @@ User = get_user_model()
 class Participant(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     participant_code = models.CharField(max_length=255, unique=True)
+    score = models.IntegerField(default=0)
 
 
 class Experiment(models.Model):
@@ -68,3 +69,17 @@ class ParticipantSubmission(models.Model):
 
     class Meta:
         unique_together = ('participant', 'context', 'question')
+
+
+class Schedule(models.Model):
+    """
+    {
+        'every': x(int),
+        'time': '14:40',
+    }
+    """
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE)
+    ping_times = models.JSONField()

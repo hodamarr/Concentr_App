@@ -28,6 +28,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+# RedBeat Configuration
+CELERY_BEAT_SCHEDULER = 'redbeat.RedBeatScheduler'
 
 # Application definition
 
@@ -45,6 +51,7 @@ INSTALLED_APPS = [
     'application',
     'accounts',
     'rest_framework_simplejwt',
+    'redbeat',
 ]
 
 SIMPLE_JWT = {

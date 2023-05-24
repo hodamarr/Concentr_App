@@ -30,7 +30,11 @@ urlpatterns = [
     path(
         'submission/',
         views.ParticipantSubmissionView.as_view(),
-        name="participant_submission")
+        name="participant_submission"),
+    path(
+        'participantlogin/',
+        views.ParticipantLoginView.as_view(),
+        name="participant_login")
 
 
 ]

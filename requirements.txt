@@ -6,3 +6,5 @@ psycopg2
 drf_spectacular
 django-rest-swagger
 djangorestframework-simplejwt
+celery-redbeat
+django-celery-beat

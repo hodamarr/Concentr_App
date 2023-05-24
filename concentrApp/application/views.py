@@ -95,7 +95,8 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
             r.choices(
                 string.ascii_letters +
                 string.digits,
-                k=8))
+                k=15))
+
         participant = Participant.objects.create(
             participant_code=participant_code)
         participant.save()
@@ -121,7 +122,7 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
         experiment_participants = ParticipantExperiment.objects.filter(
             experiment=experiment)
         participants = [
-            i.participant.participant_code for i in experiment_participants]
+            {"code": i.participant.participant_code, "score": i.participant.score } for i in experiment_participants]
         return Response(
             {'message': 'success', 'data': participants}, status.HTTP_200_OK)
 
@@ -224,7 +225,9 @@ class ParticipantSubmissionView(generics.GenericAPIView,
                 question=question,
                 answer=answer
             )
+            participant.score = participant.score + 10
 
+            participant.save()
             participant_submittion.save()
 
             serializer = self.serializer_class(participant_submittion)
@@ -232,3 +235,28 @@ class ParticipantSubmissionView(generics.GenericAPIView,
 
         except:
             return Response({"error": "error"}, status=status.HTTP_404_NOT_FOUND)
+
+class ParticipantLoginView(generics.GenericAPIView, mixins.CreateModelMixin):
+    serializer_class = ParticipantSerializer
+    authentication_classes = []  # remove authentication requirement
+    permission_classes = [AllowAny]  # allow any user to access the view
+
+    def post(self, request):
+        exceptions = []
+        participant_code = request.data.get('participant')
+        experiment_id = request.data.get('experiment_id')
+        try:
+            participant = Participant.objects.get(participant_code=participant_code)
+        except Participant.DoesNotExist as e:
+            exceptions.append(e)
+
+        try:
+            experiment = Experiment.objects.get(id=experiment_id)
+        except Experiment.DoesNotExist as e:
+            exceptions.append(e)
+        if len(exceptions) == 0:
+            return Response({"message":"OK"}, status.HTTP_200_OK)
+        return Response({"message":  str(e) for e in exceptions}, status.HTTP_404_NOT_FOUND)
+
+
+
