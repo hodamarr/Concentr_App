@@ -8,3 +8,6 @@ django-rest-swagger
 djangorestframework-simplejwt
 celery-redbeat
 django-celery-beat
+cluster~=1.4.1.post3
+celery~=5.2.7
+django-cors-headers

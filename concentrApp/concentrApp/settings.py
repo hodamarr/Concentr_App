@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-+^y&k98o4t%o*ia15y01)ba826snaryvup2dn4f!ur4cs$iqim
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['1.0.0.127.in-addr.arpa', 'localhost:8000', 'localhost', 'localhost:3000']
+
 
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
@@ -52,6 +53,7 @@ INSTALLED_APPS = [
     'accounts',
     'rest_framework_simplejwt',
     'redbeat',
+    'corsheaders',
 ]
 
 SIMPLE_JWT = {
@@ -69,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'concentrApp.urls'
@@ -165,3 +168,13 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated", ),
 }
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://1.0.0.127.in-addr.arpa',
+]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    'http://localhost:3000',
+]
+

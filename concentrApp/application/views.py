@@ -8,6 +8,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
+from concentrApp.celery import add_task, get_day
 
 
 class IsExperimentAdminPermission(BasePermission):
@@ -75,7 +76,7 @@ class ContextCreateView(generics.GenericAPIView, mixins.CreateModelMixin):
                             status=status.HTTP_400_BAD_REQUEST)
         return Response(
             {"message": "sucess",
-             "data": [{"name": item.name, "description": item.description} for item in data]},
+             "data": [{"id": item.id, "name": item.name, "description": item.description} for item in data]},
             status=status.HTTP_201_CREATED)
 
 
@@ -132,6 +133,32 @@ class QuestionCreateList(generics.GenericAPIView,
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
 
+    def _visit(self, question, is_visited):
+        if is_visited[question.id] == False:
+            is_visited[question.id] = True
+            obj = {
+                "id":question.id,
+                "description": question.description,
+                "created_at": question.created_at,
+                "updated_at":question.updated_at,
+                "answers": [{"id": i.id, "answer":i.text} for i in Answer.objects.filter(question=question)],
+                "childrens":[]
+            }
+            childrens = Question.objects.filter(parent=question)
+            for children in childrens:
+                obj["childrens"].append(self._visit(children, is_visited))
+
+            return obj
+
+    def _init_dfs(self, context):
+        questions = Question.objects.filter(context=context)
+        top_level_questions = questions.filter(parent=None)
+        is_visited = {i.id: False for i in questions}
+        result = []
+        for q in top_level_questions:
+            result.append(self._visit(q, is_visited))
+        return result
+
     def get(self, request):
         experiment_name = request.headers.get('experiment')
         context_name = request.headers.get('context')
@@ -145,17 +172,20 @@ class QuestionCreateList(generics.GenericAPIView,
         except Experiment.DoesNotExists as e:
             return Response({'error': 'experiment not found.'},
                             status=status.HTTP_404_NOT_FOUND)
-        questions = Question.objects.filter(context=context)
+        # questions = Question.objects.filter(context=context)
+        # return Response({'message': 'success',
+        #                  'data': [{'id': i.id,
+        #                            'description': i.description,
+        #                            'answers': [{"id": j.id,
+        #                                         "text": j.text,
+        #                                         } for j in Answer.objects.filter(question=i)]} for i in questions]},
+        #                 status=status.HTTP_200_OK)
         return Response({'message': 'success',
-                         'data': [{'id': i.id,
-                                   'description': i.description,
-                                   'answers': [{"id": j.id,
-                                                "text": j.text,
-                                                } for j in Answer.objects.filter(question=i)]} for i in questions]},
-                        status=status.HTTP_200_OK)
+                         'data': self._init_dfs(context)}, status=status.HTTP_200_OK)
 
     def post(self, request):
         try:
+            parent = Question.objects.get(id=request.data.get('parent_id')) if request.data.get('parent_id') else None
             experiment_name = request.data.get('experiment')
             context_name = request.data.get('context')
             description = request.data.get('description')
@@ -170,7 +200,7 @@ class QuestionCreateList(generics.GenericAPIView,
                             status=status.HTTP_404_NOT_FOUND)
 
         question = Question.objects.create(
-            context=context, description=description)
+            context=context, description=description, parent=parent)
         question.save()
         serializer = self.serializer_class(question)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -258,5 +288,31 @@ class ParticipantLoginView(generics.GenericAPIView, mixins.CreateModelMixin):
             return Response({"message":"OK"}, status.HTTP_200_OK)
         return Response({"message":  str(e) for e in exceptions}, status.HTTP_404_NOT_FOUND)
 
+class add_event_to_participant(generics.GenericAPIView, mixins.CreateModelMixin):
+    serializer_class = AnswerSerializer
+    permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
 
+    def post(self, request):
+        _participant_code = request.data.get('participant')
+        _time = request.data.get('time')
+        _experiment = request.data.get('experiment')
+        _day = request.data.get('day')
+        # check if the participant code exist and ok
+        try:
+            experiment = Experiment.objects.filter(name=_experiment)
+            participant = Participant.objects.filter(participant_code=_participant_code)
+            ParticipantExperiment.objects.filter(experiment=experiment, participant=participant)
+        except Exception as e:
+            return Response({"message":"participant or experiment not found!"}, status=status.HTTP_404_NOT_FOUND)
+        # check if "time" is ok
+        time = _time.split(":")
+        if int(time[0]) > 23 or int(time[1]) > 59:
+            return Response({"message":"Wrong time, should be like this: 08:25, 14:45!"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # add it to the task scheduler
+        try:
+            add_task(get_day(_day), time[0], time[1])
+        except Exception as e:
+            return Response({"messeage":e}, status=status.HTTP_400_BAD_REQUEST)
 
+        return Response({"message": "success"}, status=status.HTTP_200_OK)

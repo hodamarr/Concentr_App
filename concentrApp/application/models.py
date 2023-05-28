@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth import get_user_model
 
@@ -40,14 +41,32 @@ class Context(models.Model):
         on_delete=models.CASCADE,
         related_name="contexts"
     )
+    parent_id = models.IntegerField(default=-1)
 
 
 class Question(models.Model):
     context = models.ForeignKey(Context, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    description = models.CharField(max_length=255)
+    description = models.TextField()
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children')
 
+    def __str__(self):
+        return self.text
+
+    def validate_no_infinite_loop(self):
+        parent = self.parent
+        while parent is not None:
+            if parent == self:
+                raise ValidationError('Infinite loop detected in nested questions.')
+            parent = parent.parent
+
+    def save(self, *args, **kwargs):
+        try:
+            self.validate_no_infinite_loop()
+            super().save(*args, **kwargs)
+        except Exception as e:
+            raise e
 
 class Answer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
