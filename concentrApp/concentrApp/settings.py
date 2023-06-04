@@ -26,12 +26,12 @@ SECRET_KEY = 'django-insecure-+^y&k98o4t%o*ia15y01)ba826snaryvup2dn4f!ur4cs$iqim
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['1.0.0.127.in-addr.arpa', 'localhost:8000', 'localhost', 'localhost:3000']
+ALLOWED_HOSTS = ['1.0.0.127.in-addr.arpa', 'localhost:8000', 'localhost', 'localhost:3000', 'redis://localhost:6379']
 
 
 # Celery Configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
 
 # RedBeat Configuration
 CELERY_BEAT_SCHEDULER = 'redbeat.RedBeatScheduler'
@@ -110,6 +110,7 @@ DATABASES = {
     }
 }
 
+DEBUG = False
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators

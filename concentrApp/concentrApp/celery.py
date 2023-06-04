@@ -1,14 +1,3 @@
-# import os
-#
-# from django.conf import settings
-# from celery import Celery
-# # celery cmdline program
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
-# app = Celery('app')
-# app.config_from_object('django.conf:settings')
-#
-# app.autodiscover_tasks(settings.INSTALLED_APPS)
-
 from __future__ import absolute_import, unicode_literals
 
 import os
@@ -20,7 +9,8 @@ from redbeat import RedBeatSchedulerEntry
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'concentrApp.settings')
 
-app = Celery('app')
+app = Celery('concentrapp_concentrApp')
+app.conf.broker_url = 'redis://localhost:6379/0'
 
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
@@ -30,6 +20,25 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
+
+import datetime
+
+
+@app.task(name="send-event")
+def send_event(participant_code):
+    # Get the current date and time
+    current_datetime = datetime.datetime.now()
+
+    # Format the date and time as a string
+    formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+    # Construct the string to be written
+    content = "beat " + formatted_datetime + "\n"
+
+    # Open the file in append mode
+    with open("output.txt", "a") as file:
+        # Write the content to the file
+        file.write(content)
 
 # app.conf.beat_schedule = {
 #     'update-throughput-two-min': {

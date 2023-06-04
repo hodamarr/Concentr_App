@@ -21,7 +21,7 @@ class Experiment(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     description = models.TextField()
 
 
@@ -50,6 +50,7 @@ class Question(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children')
+    related_answer = models.IntegerField(default=-1)
 
     def __str__(self):
         return self.text
