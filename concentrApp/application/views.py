@@ -201,8 +201,7 @@ class QuestionCreateList(generics.GenericAPIView,
     def post(self, request):
         try:
             parent = Question.objects.get(id=request.data.get('parent_id')) if request.data.get('parent_id') else None
-            related_answer = Question.objects.get(id=request.data.get('related_answer'))\
-                if request.data.get('related_answer') else -1
+            related_answer = Answer.objects.get(id=request.data.get('related_answer')) if request.data.get('related_answer') else -1
             experiment_name = request.data.get('experiment')
             context_name = request.data.get('context')
             description = request.data.get('description')
@@ -213,7 +212,7 @@ class QuestionCreateList(generics.GenericAPIView,
             return ReturnResponse.return_404_not_found(str(e))
 
         question = Question.objects.create(
-            context=context, description=description, parent=parent, related_answer=related_answer)
+            context=context, description=description, parent=parent, related_answer=related_answer.id)
         question.save()
         serializer = self.serializer_class(question)
         return ReturnResponse.return_201_success_post(serializer.data)
@@ -240,6 +239,16 @@ class AnswerCreateListView(generics.GenericAPIView,
 
         except Exception as e:
             return ReturnResponse.return_400_bed_request(str(e))
+
+    def get(self, request, *args, **kwargs):
+        param = kwargs.get('question_id')
+        try:
+            question = Question.objects.get(id=param)
+            answers = Answer.objects.filter(question=question)
+            ReturnResponse.return_200_success_get(self.serializer_class(answers, many=True).data)
+        except Exception as e:
+            ReturnResponse.return_404_not_found(str(e))
+
 
 
 class ParticipantSubmissionView(generics.GenericAPIView,
@@ -294,20 +303,23 @@ class ParticipantLoginView(generics.GenericAPIView, mixins.CreateModelMixin):
             return ReturnResponse.return_404_not_found(str(e))
         return ReturnResponse.return_200_success_get("ok")
 
-class add_event_to_participant(generics.GenericAPIView, mixins.CreateModelMixin):
-    serializer_class = AnswerSerializer
+class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
+    serializer_class = ScheduleSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
-
+# TODO_: create url with params
     def post(self, request):
         _participant_code = request.data.get('participant')
         _time = request.data.get('time')
-        _experiment = request.data.get('experiment')
+        _experiment_id = request.data.get('experiment_id')
         _day = request.data.get('day')
+        _context_id = request.data.get('context_id')
         # check if the participant code exist and ok
         try:
-            experiment = Experiment.objects.filter(name=_experiment)
-            participant = Participant.objects.filter(participant_code=_participant_code)
-            ParticipantExperiment.objects.filter(experiment=experiment, participant=participant)
+            experiment = Experiment.objects.get(id=_experiment_id)
+            participant = Participant.objects.get(participant_code=_participant_code)
+            ParticipantExperiment.objects.get(experiment=experiment, participant=participant)
+            context = Context.objects.get(id=_context_id)
+
         except Exception as e:
             return Response({"message":"participant or experiment not found!"}, status=status.HTTP_404_NOT_FOUND)
         # check if "time" is ok
@@ -317,8 +329,33 @@ class add_event_to_participant(generics.GenericAPIView, mixins.CreateModelMixin)
                             status=status.HTTP_400_BAD_REQUEST)
         # add it to the task scheduler
         try:
-            add_task(get_day(_day), time[0], time[1])
+            # add_task(get_day(_day), time[0], time[1], _context_id)
+            schedule = Schedule.object.create(participant=participant, experiment=experiment,
+                                              context=context, ping_times={
+                    'every': get_day(_day),
+                    'time': _time,
+                })
+            schedule.save()
         except Exception as e:
             return Response({"messeage":e}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "success"}, status=status.HTTP_200_OK)
+
+    def get(self, request, *args, **kwargs):
+        param = kwargs.get('experiment_id')
+        if not param:
+            return ReturnResponse.return_400_bed_request("No participant parameter!")
+        try:
+            experiment = Experiment.objects.get(id=param)
+            schedule_data = Schedule.objects.filter(experiment=experiment)
+        except Exception as e:
+            return ReturnResponse.return_404_not_found(str(e))
+        return ReturnResponse.return_200_success_get(ScheduleSerializer(schedule_data, many=True))
+
+
+class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateModelMixin):
+    def get(self, request, *args, **kwargs):
+        pass
+        # get in header participant_code (maybe do sha-256),
+        # get context as param
+        # send all the data to

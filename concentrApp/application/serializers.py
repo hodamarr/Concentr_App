@@ -42,7 +42,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id', 'description', 'updated_at', 'created_at', 'context']
+        fields = ['id', 'description', 'updated_at', 'created_at', 'context', 'related_answer', 'parent_id']
 
 
 class AnswerSerializer(serializers.ModelSerializer):
@@ -65,3 +65,9 @@ class ParticipantSubmissionSerializer(serializers.ModelSerializer):
             'question',
             'answer']
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class ScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedule
+        fields = '__all__'

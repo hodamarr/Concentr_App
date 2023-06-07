@@ -53,7 +53,7 @@ class Question(models.Model):
     related_answer = models.IntegerField(default=-1)
 
     def __str__(self):
-        return self.text
+        return str(self.id) +", "+  self.description
 
     def validate_no_infinite_loop(self):
         parent = self.parent
@@ -103,3 +103,4 @@ class Schedule(models.Model):
     participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
     experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE)
     ping_times = models.JSONField()
+    context = models.ForeignKey(Context, on_delete=models.CASCADE, default=-1)

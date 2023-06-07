@@ -34,7 +34,11 @@ urlpatterns = [
     path(
         'participantlogin/',
         views.ParticipantLoginView.as_view(),
-        name="participant_login")
+        name="participant_login"),
+    path(
+        'scheduler/',
+        views.ScheduleListView.as_view(),
+        name="schedule"),
 
 
 ]

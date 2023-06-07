@@ -50,7 +50,7 @@ def send_event(participant_code):
 # }
 
 
-def add_task(day, hour, min, participant_code):
+def add_task(day, hour, min, participant_code, context):
     """
     celery.schedules.crontab
     (minute='*', hour='*', day_of_week='*', day_of_month='*', month_of_year='*', **kwargs)
@@ -58,7 +58,7 @@ def add_task(day, hour, min, participant_code):
     if day == "-1":
         raise Exception("Invalid day provided")
     interval = celery.schedules.crontab(minute=min, hour=hour, day_of_week=day)  # seconds
-    entry = RedBeatSchedulerEntry('send-event', 'tasks.send_event', interval, args=[participant_code])
+    entry = RedBeatSchedulerEntry('send-event', 'tasks.send_event', interval, args=[participant_code, context])
     entry.save()
 
 def get_day(day):
