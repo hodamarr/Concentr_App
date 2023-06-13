@@ -6,6 +6,8 @@ urlpatterns = [
         "experiments/",
         views.ExperimentListCreateView.as_view(),
         name="list_create_experiments"),
+    path('experiments/<int:pk>/', views.ExperimentListCreateView.as_view(), name='experiment-delete-update'),
+
     # path(
     #     "<int:pk>/",
     #     views.PostRetrieveUpdateDeleteView.as_view(),
@@ -23,6 +25,10 @@ urlpatterns = [
         "question/",
         views.QuestionCreateList.as_view(),
         name="list_create_questions"),
+    path(
+        "question/<int:pk>/",
+        views.QuestionCreateList.as_view(),
+        name="question-delete-update"),
     path(
         'answer/',
         views.AnswerCreateListView.as_view(),

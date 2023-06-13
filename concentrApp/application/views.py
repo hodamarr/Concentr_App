@@ -10,8 +10,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from concentrApp.celery import add_task, get_day
 
-
-
 class ReturnResponse():
     @staticmethod
     def return_201_success_post(data) -> Response:
@@ -39,10 +37,11 @@ class IsExperimentAdminPermission(BasePermission):
         return obj.exp_admin == request.user
 
 
-class ExperimentListCreateView(
-        generics.GenericAPIView,
-        mixins.ListModelMixin,
-        mixins.CreateModelMixin):
+class ExperimentListCreateView(generics.GenericAPIView,
+                               mixins.ListModelMixin,
+                               mixins.CreateModelMixin,
+                               mixins.DestroyModelMixin,
+                               mixins.UpdateModelMixin):
     serializer_class = ExperimentSerializer
     queryset = Experiment.objects.all()
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
@@ -63,6 +62,12 @@ class ExperimentListCreateView(
     def post(self, request: Request, *args, **kwargs):
         return self.create(request, *args, **kwargs)
 
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return self.partial_update(request, *args, **kwargs)
 
 class ContextCreateView(generics.GenericAPIView, mixins.CreateModelMixin):
     serializer_class = ContextSerializer
@@ -140,9 +145,12 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
         return ReturnResponse.return_200_success_get(participants)
 
 class QuestionCreateList(generics.GenericAPIView,
-                         mixins.CreateModelMixin):
+                         mixins.CreateModelMixin,
+                         mixins.DestroyModelMixin,
+                         mixins.UpdateModelMixin):
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
+    queryset = Question.objects.all()
 
     def _visit(self, question, is_visited):
         if is_visited[question.id] == False:
@@ -201,7 +209,7 @@ class QuestionCreateList(generics.GenericAPIView,
     def post(self, request):
         try:
             parent = Question.objects.get(id=request.data.get('parent_id')) if request.data.get('parent_id') else None
-            related_answer = Answer.objects.get(id=request.data.get('related_answer')) if request.data.get('related_answer') else -1
+            related_answer = request.data.get('related_answer') if request.data.get('related_answer') else -1
             experiment_name = request.data.get('experiment')
             context_name = request.data.get('context')
             description = request.data.get('description')
@@ -212,14 +220,24 @@ class QuestionCreateList(generics.GenericAPIView,
             return ReturnResponse.return_404_not_found(str(e))
 
         question = Question.objects.create(
-            context=context, description=description, parent=parent, related_answer=related_answer.id)
+            context=context, description=description, parent=parent, related_answer=related_answer)
         question.save()
         serializer = self.serializer_class(question)
         return ReturnResponse.return_201_success_post(serializer.data)
 
+    # def delete(self, request, *args, **kwargs):
+    #     instance = Question.objects.get(id=kwargs['pk'])
+    #     return self.destroy(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return self.partial_update(request, *args, **kwargs)
+
 
 class AnswerCreateListView(generics.GenericAPIView,
-                           mixins.CreateModelMixin):
+                           mixins.CreateModelMixin,
+                           mixins.DestroyModelMixin,
+                           mixins.UpdateModelMixin,):
     serializer_class = AnswerSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
 
@@ -249,6 +267,12 @@ class AnswerCreateListView(generics.GenericAPIView,
         except Exception as e:
             ReturnResponse.return_404_not_found(str(e))
 
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return self.partial_update(request, *args, **kwargs)
 
 
 class ParticipantSubmissionView(generics.GenericAPIView,
