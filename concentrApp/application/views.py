@@ -159,6 +159,7 @@ class QuestionCreateList(generics.GenericAPIView,
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
     queryset = Question.objects.all()
 
+
     def _visit(self, question, is_visited):
         if is_visited[question.id] == False:
             is_visited[question.id] = True
@@ -175,6 +176,7 @@ class QuestionCreateList(generics.GenericAPIView,
             for children in childrens:
                 obj["childrens"].append(self._visit(children, is_visited))
             return obj
+
 
     def _init_dfs(self, context, father_id=None):
         result = []
@@ -426,7 +428,17 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
 
 class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateModelMixin):
     def get(self, request, *args, **kwargs):
-        pass
-        # get in header participant_code (maybe do sha-256),
-        # get context as param
-        # send all the data to
+        try:
+            context_id = request.data['context_id']
+            participant_code = request.data['participant_code']
+            experiment_id = request.data['experiment_id']
+            experiment = Experiment.objects.get(id=experiment_id)
+            participant = Participant.objects.get(participant_code=participant_code)
+            ParticipantExperiment.objects.get(experiment=experiment, participant=participant)
+            context = Context.objects.get(id=context_id, experiment=experiment)
+            result = QuestionCreateList._init_dfs()
+            return ReturnResponse.return_200_success_get(result)
+        except (Experiment.DoesNotExists, Participant.DoesNotExists, ParticipantExperiment.DoesNotExists) as e:
+            return ReturnResponse.return_400_bed_request(str(e))
+        except Exception as e:
+            return ReturnResponse.return_500_internal_server_error(str(e))
