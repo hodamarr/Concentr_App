@@ -50,9 +50,14 @@ urlpatterns = [
         views.ScheduleListView.as_view(),
         name="schedule"),
     path(
-        'questionforparticipant/',
+        'questionsforparticipant/',
         views.QuestionForParticipantsListView.as_view(),
         name='question_for_participant'
+    ),
+    path(
+        'submission/',
+        views.SubmittionPost.as_view(),
+        name='submission_data'
     ),
 
 ]

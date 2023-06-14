@@ -374,6 +374,11 @@ class ParticipantLoginView(generics.GenericAPIView, mixins.CreateModelMixin):
             return ReturnResponse.return_404_not_found(str(e))
         return ReturnResponse.return_200_success_get("ok")
 
+    def get(self, request):
+        code = request.query_params.get('code')
+        instance = self.get_object()
+        return ReturnResponse.return_200_success_get(instance.score)
+
 class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
     serializer_class = ScheduleSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
@@ -428,10 +433,14 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
 
 
 class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateModelMixin):
+    serializer_class = ParticipantSerializer
+    authentication_classes = []  # remove authentication requirement
+    permission_classes = [AllowAny]  # allow any user to access the view
+
     def get(self, request, *args, **kwargs):
         try:
             context_id = request.data['context_id']
-            participant_code = request.data['participant_code']
+            participant_code = request.data['participant']
             experiment_id = request.data['experiment_id']
             experiment = Experiment.objects.get(id=experiment_id)
             participant = Participant.objects.get(participant_code=participant_code)
@@ -444,3 +453,31 @@ class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateMode
         except Exception as e:
             return ReturnResponse.return_500_internal_server_error(str(e))
 
+class SubmittionPost(generics.GenericAPIView):
+    def post(self, request):
+        try:
+            context_id = request.data['context_id']
+            participant_code = request.data['participant']
+            experiment_id = request.data['experiment_id']
+            question_id = request.data['question_id']
+            answer_id = request.data['answer_id']
+
+            experiment = Experiment.objects.get(id=experiment_id)
+            participant = Participant.objects.get(participant_code=participant_code)
+            ParticipantExperiment.objects.get(experiment=experiment, participant=participant)
+            context = Context.objects.get(id=context_id)
+            question = Question.objects.get(id=question_id)
+            answer = Answer.objects.get(id=answer_id)
+
+            participant_submission = ParticipantSubmission.objects.create(
+                participant=participant,
+                experiment=experiment,
+                context=context,
+                question=question,
+                answer=answer,
+            )
+            participant_submission.save()
+            return ReturnResponse.return_200_success_get("sucess")
+
+        except Exception as e:
+            return ReturnResponse.return_404_not_found(str(e))
