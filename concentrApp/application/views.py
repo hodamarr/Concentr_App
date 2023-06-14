@@ -401,7 +401,7 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
         # add it to the task scheduler
         try:
             # add_task(get_day(_day), time[0], time[1], _context_id)
-            schedule = Schedule.object.create(participant=participant, experiment=experiment,
+            schedule = Schedule.objects.create(participant=participant, experiment=experiment,
                                               context=context, ping_times={
                     'every': get_day(_day),
                     'time': _time,
@@ -413,17 +413,20 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
         return Response({"message": "success"}, status=status.HTTP_200_OK)
 
     def get(self, request, *args, **kwargs):
-        param = kwargs.get('experiment_id')
+        param = request.query_params.get('experiment_id')
         if not param:
             return ReturnResponse.return_400_bed_request("No participant parameter!")
         try:
             experiment = Experiment.objects.get(id=param)
             schedule_data = Schedule.objects.filter(experiment=experiment)
+            # self.serializer_class(schedule_data)
+            return ReturnResponse.return_200_success_get(ScheduleSerializer(schedule_data, many=True).data)
         except (Schedule.DoesNotExists, Experiment.DoesNotExists) as e:
             return ReturnResponse.return_404_not_found(str(e))
         except Exception as e:
             return ReturnResponse.return_500_internal_server_error(str(e))
-        return ReturnResponse.return_200_success_get(ScheduleSerializer(schedule_data, many=True))
+
+
 
 
 class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateModelMixin):
