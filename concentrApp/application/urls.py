@@ -49,6 +49,10 @@ urlpatterns = [
         'scheduler/',
         views.ScheduleListView.as_view(),
         name="schedule"),
-
+    path(
+        'questionforparticipant/',
+        views.QuestionForParticipantsListView.as_view(),
+        name='question_for_participant'
+    ),
 
 ]

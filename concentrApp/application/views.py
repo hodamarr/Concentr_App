@@ -427,8 +427,6 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
             return ReturnResponse.return_500_internal_server_error(str(e))
 
 
-
-
 class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateModelMixin):
     def get(self, request, *args, **kwargs):
         try:
@@ -445,3 +443,4 @@ class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateMode
             return ReturnResponse.return_400_bed_request(str(e))
         except Exception as e:
             return ReturnResponse.return_500_internal_server_error(str(e))
+

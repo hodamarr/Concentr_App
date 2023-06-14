@@ -86,6 +86,7 @@ class ParticipantSubmission(models.Model):
     context = models.ForeignKey(Context, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, default=-1)
 
     class Meta:
         unique_together = ('participant', 'context', 'question')
