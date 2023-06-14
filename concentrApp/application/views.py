@@ -417,8 +417,10 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
         try:
             experiment = Experiment.objects.get(id=param)
             schedule_data = Schedule.objects.filter(experiment=experiment)
-        except Exception as e:
+        except (Schedule.DoesNotExists, Experiment.DoesNotExists) as e:
             return ReturnResponse.return_404_not_found(str(e))
+        except Exception as e:
+            return ReturnResponse.return_500_internal_server_error(str(e))
         return ReturnResponse.return_200_success_get(ScheduleSerializer(schedule_data, many=True))
 
 
