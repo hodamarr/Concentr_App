@@ -34,6 +34,10 @@ urlpatterns = [
         views.AnswerCreateListView.as_view(),
         name="list_create_answer"),
     path(
+        "answer/<int:pk>/",
+        views.AnswerCreateListView.as_view(),
+        name="answer-delete-update"),
+    path(
         'submission/',
         views.ParticipantSubmissionView.as_view(),
         name="participant_submission"),

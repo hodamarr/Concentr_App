@@ -31,6 +31,13 @@ class ReturnResponse():
         return Response({'error': message},
                         status=status.HTTP_400_BAD_REQUEST)
 
+    @staticmethod
+    def return_500_internal_server_error(error_message):
+        response_data = {
+            'error': error_message
+        }
+        return Response(response_data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class IsExperimentAdminPermission(BasePermission):
     def has_object_permission(self, request, view, obj):
@@ -106,9 +113,9 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
 
     def post(self, request, *args, **kwargs):
-        experiment_name = request.data.get('experiment')
+        experiment_id = request.data.get('experiment_id')
         try:
-            experiment = Experiment.objects.get(name=experiment_name)
+            experiment = Experiment.objects.get(name=experiment_id)
         except Experiment.DoesNotExist as e:
             return ReturnResponse.return_400_bed_request(str(e))
 
@@ -132,9 +139,9 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
         return ReturnResponse.return_201_success_post(serializer.data)
 
     def get(self, request, *args, **kwargs):
-        experiment_name = request.GET.get('experiment')
+        experiment_id = request.GET.get('experiment')
         try:
-            experiment = Experiment.objects.get(name=experiment_name)
+            experiment = Experiment.objects.get(name=experiment_id)
         except Experiment.DoesNotExists as e:
             return ReturnResponse.return_400_bed_request(str(e))
 
@@ -225,13 +232,29 @@ class QuestionCreateList(generics.GenericAPIView,
         serializer = self.serializer_class(question)
         return ReturnResponse.return_201_success_post(serializer.data)
 
-    # def delete(self, request, *args, **kwargs):
-    #     instance = Question.objects.get(id=kwargs['pk'])
-    #     return self.destroy(request, *args, **kwargs)
+    def delete(self, request, *args, **kwargs):
+        try:
+            instance = Question.objects.get(id=kwargs['pk'])
+        except Question.DoesNotExist as e:
+            return ReturnResponse.return_400_bed_request(str(e))
+        if not instance.children.exists():
+            instance.delete()
+            return ReturnResponse.return_200_success_get("deleted")
+        else:
+            return ReturnResponse.return_400_bed_request("Question is not children")
 
     def patch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        return self.partial_update(request, *args, **kwargs)
+        try:
+            question = Question.objects.get(id=kwargs['pk'])
+            if 'description' in request.data:
+                question.description = request.data['description']
+            if 'related_answer' in request.data:
+                question.related_answer = request.data['related_answer']
+            question.save()
+            serialized_data = self.serializer_class(question).data
+            return ReturnResponse.return_200_success_get(serialized_data)
+        except Exception as e:
+            return ReturnResponse.return_404_not_found(str(e))
 
 
 class AnswerCreateListView(generics.GenericAPIView,
@@ -240,6 +263,7 @@ class AnswerCreateListView(generics.GenericAPIView,
                            mixins.UpdateModelMixin,):
     serializer_class = AnswerSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
+    queryset = Answer.objects.all()
 
     def post(self, request):
         try:
@@ -259,20 +283,41 @@ class AnswerCreateListView(generics.GenericAPIView,
             return ReturnResponse.return_400_bed_request(str(e))
 
     def get(self, request, *args, **kwargs):
-        param = kwargs.get('question_id')
+        param = request.query_params.get('question_id')
         try:
             question = Question.objects.get(id=param)
             answers = Answer.objects.filter(question=question)
-            ReturnResponse.return_200_success_get(self.serializer_class(answers, many=True).data)
+            serialized_data = self.serializer_class(answers, many=True).data
+            return ReturnResponse.return_200_success_get(serialized_data)
+        except Question.DoesNotExist:
+            return ReturnResponse.return_404_not_found("Question not found")
         except Exception as e:
-            ReturnResponse.return_404_not_found(str(e))
+            return ReturnResponse.return_500_internal_server_error(str(e))
 
     def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+        answer_id = kwargs['pk']
+        if len(Question.objects.filter(related_answer=answer_id)) == 0:
+            try:
+                Answer.objects.get(id=answer_id).delete()
+                return ReturnResponse.return_200_success_get('deleted')
+            except Answer.DoesNotExist as e:
+                return ReturnResponse.return_400_bed_request(str(e))
+            except Exception as e:
+                return ReturnResponse.return_500_internal_server_error(str(e))
+        else:
+            return ReturnResponse.return_400_bed_request("This Answer has related question!")
 
     def patch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        return self.partial_update(request, *args, **kwargs)
+        try:
+            instance = Answer.objects.get(id=kwargs['pk'])
+            instance.text = request.data['text']
+            instance.save()
+            serialized_data = self.serializer_class(instance).data
+            return ReturnResponse.return_200_success_get(serialized_data)
+        except Exception as e:
+            return ReturnResponse.return_400_bed_request(str(e))
+        except Answer.DoesNotExist as e:
+            return ReturnResponse.return_400_bed_request(str(e))
 
 
 class ParticipantSubmissionView(generics.GenericAPIView,
