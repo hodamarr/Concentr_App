@@ -59,5 +59,10 @@ urlpatterns = [
         views.SubmittionPost.as_view(),
         name='submission_data'
     ),
+    path(
+        'submission/data/',
+        views.PartipantSubmissionGet.as_view(),
+        name='submission_get'
+    )
 
 ]

@@ -279,7 +279,6 @@ class AnswerCreateListView(generics.GenericAPIView,
             answer.save()
             serializer = self.serializer_class(answer)
             return ReturnResponse.return_201_success_post(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return ReturnResponse.return_400_bed_request(str(e))
@@ -322,12 +321,29 @@ class AnswerCreateListView(generics.GenericAPIView,
             return ReturnResponse.return_400_bed_request(str(e))
 
 
+class PartipantSubmissionGet(generics.GenericAPIView):
+    serializer_class = ParticipantSubmissionSerializer
+    permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
+    queryset = ParticipantSubmission.objects.all()
+
+    def get(self, request, args, **kwargs):
+        experiment_id = request.GET('experiment_id')
+        try:
+            experiment = Experiment.objects.get(id=experiment_id)
+            ret = self.queryset.filter(experiment=experiment)
+            serialized = self.serializer_class(ret)
+            return ReturnResponse.return_200_success_get(serialized.data)
+        except (Experiment.DoesNotExist, ParticipantSubmission.DoesNotExist) as e:
+            return ReturnResponse.return_404_not_found(str(e))
+        except Exception as e:
+            return ReturnResponse.return_500_internal_server_error(str(e))
+
+
 class ParticipantSubmissionView(generics.GenericAPIView,
                             mixins.CreateModelMixin):
     serializer_class = ParticipantSubmissionSerializer
     authentication_classes = []  # remove authentication requirement
     permission_classes = [AllowAny]  # allow any user to access the view
-
 
     def post(self, request):
         try:
