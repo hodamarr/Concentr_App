@@ -55,14 +55,14 @@ urlpatterns = [
         name='question_for_participant'
     ),
     path(
-        'submission/',
-        views.SubmittionPost.as_view(),
-        name='submission_data'
-    ),
-    path(
         'submission/data/',
         views.PartipantSubmissionGet.as_view(),
         name='submission_get'
     )
+    # path(
+    #     'submission/',
+    #     views.SubmittionPost.as_view(),
+    #     name='submission_data'
+    # ),
 
 ]

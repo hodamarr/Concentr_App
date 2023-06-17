@@ -11,6 +11,7 @@ class Participant(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     participant_code = models.CharField(max_length=255, unique=True)
     score = models.IntegerField(default=0)
+    expo_token = models.TextField(null=True)
 
 
 class Experiment(models.Model):
@@ -53,7 +54,7 @@ class Question(models.Model):
     related_answer = models.IntegerField(default=-1)
 
     def __str__(self):
-        return str(self.id) +", "+  self.description
+        return str(self.id) + ", " + self.description
 
     def validate_no_infinite_loop(self):
         parent = self.parent
@@ -68,6 +69,7 @@ class Question(models.Model):
             super().save(*args, **kwargs)
         except Exception as e:
             raise e
+
 
 class Answer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)

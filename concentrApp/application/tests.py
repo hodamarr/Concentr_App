@@ -7,8 +7,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 from .models import *
-from django.contrib.auth import get_user_model
-from .serializers import *
+from .django.contrib.auth import get_user_model
+from serializers import *
 
 User = get_user_model()
 
@@ -198,3 +198,65 @@ class ParticipantSubmissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn('error', response.data)
 
+class SubmittionPostTestCase(APITestCase):
+
+    def test_successful_submission(self):
+        experiment = Experiment.objects.create(name='Experiment')
+        participant = Participant.objects.create(participant_code='123')
+        participant_experiment = ParticipantExperiment.objects.create(experiment=experiment, participant=participant)
+        context = Context.objects.create(context_id='456')
+        question = Question.objects.create(question_id='789')
+        answer = Answer.objects.create(answer_id='abc')
+
+        data = {
+            'context_id': context.id,
+            'participant': participant.participant_code,
+            'experiment_id': experiment.id,
+            'question_id': question.id,
+            'answer_id': answer.id
+        }
+
+        response = self.client.post('/api/submission/', data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(ParticipantSubmission.objects.count(), 1)
+
+    def test_missing_data(self):
+        response = self.client.post('/api/submission/', {})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(ParticipantSubmission.objects.count(), 0)
+
+    def test_invalid_experiment(self):
+        participant = Participant.objects.create(participant_code='123')
+        context = Context.objects.create(context_id='456')
+        question = Question.objects.create(question_id='789')
+        answer = Answer.objects.create(answer_id='abc')
+
+        data = {
+            'context_id': context.id,
+            'participant': participant.participant_code,
+            'experiment_id': 999,  # Invalid experiment ID
+            'question_id': question.id,
+            'answer_id': answer.id
+        }
+
+        response = self.client.post('/api/submission/', data)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(ParticipantSubmission.objects.count(), 0)
+
+    def test_invalid_participant(self):
+        experiment = Experiment.objects.create(name='Experiment')
+        context = Context.objects.create(context_id='456')
+        question = Question.objects.create(question_id='789')
+        answer = Answer.objects.create(answer_id='abc')
+
+        data = {
+            'context_id': context.id,
+            'participant': 'invalid_participant_code',  # Invalid participant code
+            'experiment_id': experiment.id,
+            'question_id': question.id,
+            'answer_id': answer.id
+        }
+
+        response = self.client.post('/api/submission/', data)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(ParticipantSubmission.objects.count(), 0)
