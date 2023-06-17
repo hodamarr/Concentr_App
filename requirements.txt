@@ -11,3 +11,6 @@ django-celery-beat
 cluster~=1.4.1.post3
 celery~=5.2.7
 django-cors-headers
+exponent_server_sdk
+
+requests~=2.28.2
