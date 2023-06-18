@@ -433,34 +433,44 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
                                                 context=context, ping_times={
                         'time': _time,
                     })
-                parsed_time = _time.split(":")
-                hour = int(parsed_time[0])
-                minute = int(parsed_time[1])
-                time_obj = datetime.time(hour=hour, minute=minute)
-                current_datetime = datetime.datetime.now()
-                schedule_eta = current_datetime.replace(hour=hour, minute=minute, second=0, microsecond=0)
-
-                # schedule_eta = {
-                #     'minute': time_obj.minute,
-                #     'hour': time_obj.hour,
-                #     'day_of_week': '0-6',  # Sunday to Thursday
-                # }
-
-                participant_token = participant.expo_token
-                task.apply_async(args=[participant_token], eta=schedule_eta)
+                schedule.save()
+                # parsed_time = _time.split(":")
+                # hour = int(parsed_time[0])
+                # minute = int(parsed_time[1])
+                # time_obj = datetime.time(hour=hour, minute=minute)
+                # current_datetime = datetime.datetime.now()
+                # schedule_eta = current_datetime.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                #
+                # # schedule_eta = {
+                # #     'minute': time_obj.minute,
+                # #     'hour': time_obj.hour,
+                # #     'day_of_week': '0-6',  # Sunday to Thursday
+                # # }
+                #
+                # participant_token = participant.expo_token
+                # task.apply_async(args=[participant_token], eta=schedule_eta)
             except Exception as e:
                 return Response({"messeage":e}, status=status.HTTP_400_BAD_REQUEST)
-            schedule.save()
+
         return Response({"message": "success"}, status=status.HTTP_200_OK)
 
     def get(self, request, *args, **kwargs):
         param = request.query_params.get('experiment_id')
+        data = {
+            'participant': '',
+            'time': [],
+
+
+        }
         if not param:
             return ReturnResponse.return_400_bed_request("No experiment parameter!")
         try:
             experiment = Experiment.objects.get(id=param)
             schedule_data = Schedule.objects.filter(experiment=experiment)
-            # self.serializer_class(schedule_data)
+            participant_experiment = ParticipantExperiment.objects.filter(experiment=experiment)
+            for pe in participant_experiment:
+                data['participant'] = pe.participant.participant_code
+                data['time'].append(schedule_data.filter(participant=pe.participant).pingtime)
             return ReturnResponse.return_200_success_get(ScheduleSerializer(schedule_data, many=True).data)
         except (Schedule.DoesNotExists, Experiment.DoesNotExists) as e:
             return ReturnResponse.return_404_not_found(str(e))

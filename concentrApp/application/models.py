@@ -97,7 +97,6 @@ class ParticipantSubmission(models.Model):
 class Schedule(models.Model):
     """
     {
-        'every': x(int),
         'time': '14:40',
     }
     """
