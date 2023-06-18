@@ -430,9 +430,7 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
         for _time in _times:
             try:
                 schedule = Schedule.objects.create(participant=participant, experiment=experiment,
-                                                context=context, ping_times={
-                        'time': _time,
-                    })
+                                                context=context, ping_times=_time)
                 schedule.save()
                 # parsed_time = _time.split(":")
                 # hour = int(parsed_time[0])
@@ -456,12 +454,7 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
 
     def get(self, request, *args, **kwargs):
         param = request.query_params.get('experiment_id')
-        data = {
-            'participant': '',
-            'time': [],
-
-
-        }
+        data = []
         if not param:
             return ReturnResponse.return_400_bed_request("No experiment parameter!")
         try:
@@ -469,9 +462,8 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
             schedule_data = Schedule.objects.filter(experiment=experiment)
             participant_experiment = ParticipantExperiment.objects.filter(experiment=experiment)
             for pe in participant_experiment:
-                data['participant'] = pe.participant.participant_code
-                data['time'].append(schedule_data.filter(participant=pe.participant).pingtime)
-            return ReturnResponse.return_200_success_get(ScheduleSerializer(schedule_data, many=True).data)
+                data.append(self.serializer_class(schedule_data.filter(participant_id=pe.id), many=True).data)
+            return ReturnResponse.return_200_success_get(data)
         except (Schedule.DoesNotExists, Experiment.DoesNotExists) as e:
             return ReturnResponse.return_404_not_found(str(e))
         except Exception as e:

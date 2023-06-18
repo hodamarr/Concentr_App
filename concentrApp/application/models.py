@@ -104,5 +104,5 @@ class Schedule(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
     experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE)
-    ping_times = models.JSONField()
+    ping_times = models.TextField()
     context = models.ForeignKey(Context, on_delete=models.CASCADE, default=-1)
