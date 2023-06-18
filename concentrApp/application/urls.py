@@ -8,11 +8,6 @@ urlpatterns = [
         name="list_create_experiments"),
     path('experiments/<int:pk>/', views.ExperimentListCreateView.as_view(), name='experiment-delete-update'),
 
-    # path(
-    #     "<int:pk>/",
-    #     views.PostRetrieveUpdateDeleteView.as_view(),
-    #     name="post_detail",
-    # ),
     path(
         "participants/",
         views.ParticipantExperimentCreateView.as_view(),

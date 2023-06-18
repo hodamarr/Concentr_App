@@ -381,6 +381,7 @@ class ParticipantLoginView(generics.GenericAPIView, mixins.CreateModelMixin):
     serializer_class = ParticipantSerializer
     authentication_classes = []  # remove authentication requirement
     permission_classes = [AllowAny]  # allow any user to access the view
+    queryset = Participant.objects.all()
 
     def post(self, request):
         participant_code = request.data.get('participant')
@@ -405,8 +406,11 @@ class ParticipantLoginView(generics.GenericAPIView, mixins.CreateModelMixin):
 
     def get(self, request):
         code = request.query_params.get('code')
-        instance = self.get_object()
-        return ReturnResponse.return_200_success_get(instance.score)
+        try:
+            data = self.queryset.get(participant_code=code)
+            return ReturnResponse.return_200_success_get(data.score)
+        except Exception as e:
+            return ReturnResponse.return_404_not_found(str(e))
 
 class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
     serializer_class = ScheduleSerializer
