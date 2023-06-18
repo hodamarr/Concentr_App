@@ -46,6 +46,10 @@ urlpatterns = [
         views.ParticipantLoginView.as_view(),
         name="participant_login"),
     path(
+        "participantlogin/<str:pk>/",
+        views.ParticipantLoginView.as_view(),
+        name="participant_login_update"),
+    path(
         'scheduler/',
         views.ScheduleListView.as_view(),
         name="schedule"),

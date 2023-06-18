@@ -11,7 +11,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
 class ParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Participant
-        fields = ['id', 'created_at', 'participant_code']
+        fields = ['id', 'created_at', 'participant_code', 'expo_token']
 
 
 class ParticipantExperimentSerializer(serializers.ModelSerializer):

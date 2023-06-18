@@ -8,7 +8,10 @@ from rest_framework.permissions import (
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
-from concentrApp.celery import add_task, get_day
+from dateutil import parser
+#from concentrApp.celery import add_task, get_day
+from .tasks import task
+import datetime
 
 class ReturnResponse():
     @staticmethod
@@ -141,7 +144,7 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
     def get(self, request, *args, **kwargs):
         experiment_id = request.GET.get('experiment')
         try:
-            experiment = Experiment.objects.get(name=experiment_id)
+            experiment = Experiment.objects.get(id=experiment_id)
         except Experiment.DoesNotExists as e:
             return ReturnResponse.return_400_bed_request(str(e))
 
@@ -389,6 +392,17 @@ class ParticipantLoginView(generics.GenericAPIView, mixins.CreateModelMixin):
             return ReturnResponse.return_404_not_found(str(e))
         return ReturnResponse.return_200_success_get("ok")
 
+    def patch(self, request, *args, **kwargs):
+        try:
+            code = kwargs['pk']
+            participant = Participant.objects.get(participant_code=code)
+            participant.expo_token = request.data.get('token')
+            participant.save()
+            serialized = self.serializer_class(participant)
+            return ReturnResponse.return_200_success_get(serialized.data)
+        except Exception as e:
+            return ReturnResponse.return_404_not_found(str(e))
+
     def get(self, request):
         code = request.query_params.get('code')
         instance = self.get_object()
@@ -414,22 +428,29 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
             return Response({"message":"participant or experiment not found!"}, status=status.HTTP_404_NOT_FOUND)
         # check if "time" is ok
         for _time in _times:
-            time = _time.split(":")
-            if int(time[0]) > 23 or int(time[1]) > 59:
-                return Response({"message":"Wrong time, should be like this: 08:25, 14:45!"},
-                                status=status.HTTP_400_BAD_REQUEST)
-        # add it to the task scheduler
             try:
-            # add_task(7-5, time[0], time[1], _context_id)
                 schedule = Schedule.objects.create(participant=participant, experiment=experiment,
                                                 context=context, ping_times={
                         'time': _time,
-                        'every': '7-5'
                     })
-                schedule.save()
+                parsed_time = _time.split(":")
+                hour = int(parsed_time[0])
+                minute = int(parsed_time[1])
+                time_obj = datetime.time(hour=hour, minute=minute)
+                current_datetime = datetime.datetime.now()
+                schedule_eta = current_datetime.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+                # schedule_eta = {
+                #     'minute': time_obj.minute,
+                #     'hour': time_obj.hour,
+                #     'day_of_week': '0-6',  # Sunday to Thursday
+                # }
+
+                participant_token = participant.expo_token
+                task.apply_async(args=[participant_token], eta=schedule_eta)
             except Exception as e:
                 return Response({"messeage":e}, status=status.HTTP_400_BAD_REQUEST)
-
+            schedule.save()
         return Response({"message": "success"}, status=status.HTTP_200_OK)
 
     def get(self, request, *args, **kwargs):
@@ -445,6 +466,7 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
             return ReturnResponse.return_404_not_found(str(e))
         except Exception as e:
             return ReturnResponse.return_500_internal_server_error(str(e))
+
 
 # PARTICIPANT GET QUESTIONS
 class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateModelMixin):
@@ -467,34 +489,3 @@ class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateMode
             return ReturnResponse.return_400_bed_request(str(e))
         except Exception as e:
             return ReturnResponse.return_500_internal_server_error(str(e))
-
-# PARTICIPANT SUBMISSION
-# class SubmittionPost(generics.GenericAPIView):
-#     def post(self, request):
-#         try:
-#             context_id = request.data['context_id']
-#             participant_code = request.data['participant']
-#             experiment_id = request.data['experiment_id']
-#             question_id = request.data['question_id']
-#             answer_id = request.data['answer_id']
-#
-#             experiment = Experiment.objects.get(id=experiment_id)
-#             participant = Participant.objects.get(participant_code=participant_code)
-#             ParticipantExperiment.objects.get(experiment=experiment, participant=participant)
-#             context = Context.objects.get(id=context_id)
-#             question = Question.objects.get(id=question_id)
-#             answer = Answer.objects.get(id=answer_id)
-#
-#             participant_submission = ParticipantSubmission.objects.create(
-#                 participant=participant,
-#                 experiment=experiment,
-#                 context=context,
-#                 question=question,
-#                 answer=answer,
-#             )
-#             participant_submission.save()
-#             return ReturnResponse.return_200_success_get("sucess")
-#
-#         except Exception as e:
-#             return ReturnResponse.return_404_not_found(str(e))
-
