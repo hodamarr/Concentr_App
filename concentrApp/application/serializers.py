@@ -11,7 +11,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
 class ParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Participant
-        fields = ['id', 'created_at', 'participant_code', 'expo_token']
+        fields = ['id', 'created_at', 'participant_code', 'expo_token', 'is_female']
 
 
 class ParticipantExperimentSerializer(serializers.ModelSerializer):
@@ -66,8 +66,9 @@ class ParticipantSubmissionSerializer(serializers.ModelSerializer):
             'answer']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
-
 class ScheduleSerializer(serializers.ModelSerializer):
+    participant_code = serializers.CharField(source='participant.participant_code')
+
     class Meta:
         model = Schedule
-        fields = '__all__'
+        fields = ('ping_times', 'participant_code', 'experiment', 'context')

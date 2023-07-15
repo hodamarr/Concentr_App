@@ -117,10 +117,13 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
 
     def post(self, request, *args, **kwargs):
         experiment_id = request.data.get('experiment_id')
+        gender = request.data.get('gender')
+        is_female = True if gender == 'f' else False
         try:
             experiment = Experiment.objects.get(name=experiment_id)
         except Experiment.DoesNotExist as e:
             return ReturnResponse.return_400_bed_request(str(e))
+
 
         participant_code = ''.join(
             r.choices(
@@ -129,7 +132,8 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
                 k=15))
 
         participant = Participant.objects.create(
-            participant_code=participant_code)
+            participant_code=participant_code,
+            is_female=is_female)
         participant.save()
 
         participant_experiment = ParticipantExperiment.objects.create(
@@ -151,7 +155,8 @@ class ParticipantExperimentCreateView(generics.GenericAPIView,
         experiment_participants = ParticipantExperiment.objects.filter(
             experiment=experiment)
         participants = [
-            {"code": i.participant.participant_code, "score": i.participant.score } for i in experiment_participants]
+            {"code": i.participant.participant_code, "score": i.participant.score,
+             "gender": 'f' if i.participant.is_female == True else 'm' } for i in experiment_participants]
         return ReturnResponse.return_200_success_get(participants)
 
 
@@ -466,7 +471,9 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
             schedule_data = Schedule.objects.filter(experiment=experiment)
             participant_experiment = ParticipantExperiment.objects.filter(experiment=experiment)
             for pe in participant_experiment:
-                data.append(self.serializer_class(schedule_data.filter(participant_id=pe.id), many=True).data)
+                serialized_data = self.serializer_class(schedule_data.filter(participant_id=pe.id), many=True).data
+                if serialized_data:
+                    data.append(serialized_data)
             return ReturnResponse.return_200_success_get(data)
         except (Schedule.DoesNotExists, Experiment.DoesNotExists) as e:
             return ReturnResponse.return_404_not_found(str(e))

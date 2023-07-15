@@ -12,6 +12,8 @@ class Participant(models.Model):
     participant_code = models.CharField(max_length=255, unique=True)
     score = models.IntegerField(default=0)
     expo_token = models.TextField(null=True)
+    is_female = models.BooleanField(default=True)
+
 
 
 class Experiment(models.Model):
