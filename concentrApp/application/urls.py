@@ -49,6 +49,10 @@ urlpatterns = [
         views.ScheduleListView.as_view(),
         name="schedule"),
     path(
+        "scheduler/<str:pk>/",
+        views.ScheduleListView.as_view(),
+        name="scheduler-edit"),
+    path(
         'questionsforparticipant/',
         views.QuestionForParticipantsListView.as_view(),
         name='question_for_participant'
@@ -58,6 +62,7 @@ urlpatterns = [
         views.PartipantSubmissionGet.as_view(),
         name='submission_get'
     )
+
     # path(
     #     'submission/',
     #     views.SubmittionPost.as_view(),

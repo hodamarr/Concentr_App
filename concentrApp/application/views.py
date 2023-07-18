@@ -461,6 +461,20 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
 
         return Response({"message": "success"}, status=status.HTTP_200_OK)
 
+    def put(self, request, *args, **kwargs):
+        try:
+            code = kwargs['pk']
+            data = request.data
+            participant = Participant.objects.get(participant_code=code)
+            schedule_items = []
+            for old_time, new_time in zip(data['old_time'], data['new_time']):
+                item = Schedule.objects.get(participant=participant, ping_times=old_time)
+                item.ping_times = new_time
+                item.save()
+            return ReturnResponse.return_200_success_get("success")
+        except Exception as e:
+            return ReturnResponse.return_404_not_found(str(e))
+
     def get(self, request, *args, **kwargs):
         param = request.query_params.get('experiment_id')
         data = []
