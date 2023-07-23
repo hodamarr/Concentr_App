@@ -466,11 +466,11 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
             code = kwargs['pk']
             data = request.data
             participant = Participant.objects.get(participant_code=code)
-            schedule_items = []
             for old_time, new_time in zip(data['old_time'], data['new_time']):
                 item = Schedule.objects.get(participant=participant, ping_times=old_time)
                 item.ping_times = new_time
                 item.save()
+
             return ReturnResponse.return_200_success_get("success")
         except Exception as e:
             return ReturnResponse.return_404_not_found(str(e))
@@ -510,7 +510,7 @@ class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateMode
             participant = Participant.objects.get(participant_code=participant_code)
             ParticipantExperiment.objects.get(experiment=experiment, participant=participant)
             context = Context.objects.get(id=context_id, experiment=experiment)
-            result = QuestionCreateList._init_dfs()
+            result = QuestionCreateList()._init_dfs(context)
             return ReturnResponse.return_200_success_get(result)
         except (Experiment.DoesNotExists, Participant.DoesNotExists, ParticipantExperiment.DoesNotExists) as e:
             return ReturnResponse.return_400_bed_request(str(e))
