@@ -8,9 +8,8 @@ from rest_framework.permissions import (
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
-from dateutil import parser
-#from concentrApp.celery import add_task, get_day
-import datetime
+from concentrApp.tasks import create_celery_beat_schedule
+
 
 class ReturnResponse():
     @staticmethod
@@ -418,10 +417,12 @@ class ParticipantLoginView(generics.GenericAPIView, mixins.CreateModelMixin):
         except Exception as e:
             return ReturnResponse.return_404_not_found(str(e))
 
+
 class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
     serializer_class = ScheduleSerializer
     permission_classes = [IsAuthenticated, IsExperimentAdminPermission]
 # TODO_: create url with params
+
     def post(self, request):
         _participant_code = request.data.get('participant')
         _times = request.data.get('time')
@@ -435,30 +436,16 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
             context = Context.objects.get(id=_context_id)
 
         except Exception as e:
-            return Response({"message":"participant or experiment not found!"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "participant or experiment not found!"}, status=status.HTTP_404_NOT_FOUND)
         # check if "time" is ok
         for _time in _times:
             try:
                 schedule = Schedule.objects.create(participant=participant, experiment=experiment,
                                                 context=context, ping_times=_time)
                 schedule.save()
-                # parsed_time = _time.split(":")
-                # hour = int(parsed_time[0])
-                # minute = int(parsed_time[1])
-                # time_obj = datetime.time(hour=hour, minute=minute)
-                # current_datetime = datetime.datetime.now()
-                # schedule_eta = current_datetime.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                #
-                # # schedule_eta = {
-                # #     'minute': time_obj.minute,
-                # #     'hour': time_obj.hour,
-                # #     'day_of_week': '0-6',  # Sunday to Thursday
-                # # }
-                #
-                # participant_token = participant.expo_token
-                # task.apply_async(args=[participant_token], eta=schedule_eta)
+                create_celery_beat_schedule(schedule)
             except Exception as e:
-                return Response({"messeage":e}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"messeage": e}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "success"}, status=status.HTTP_200_OK)
 
@@ -471,7 +458,7 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
                 item = Schedule.objects.get(participant=participant, ping_times=old_time)
                 item.ping_times = new_time
                 item.save()
-
+                create_celery_beat_schedule(item)
             return ReturnResponse.return_200_success_get("success")
         except Exception as e:
             return ReturnResponse.return_404_not_found(str(e))
@@ -496,6 +483,9 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
             return ReturnResponse.return_500_internal_server_error(str(e))
 
 
+    # add delete
+
+
 # PARTICIPANT GET QUESTIONS
 class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateModelMixin):
     serializer_class = ParticipantSerializer
@@ -504,9 +494,9 @@ class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateMode
 
     def get(self, request, *args, **kwargs):
         try:
-            context_id = request.headers.get('context_id')
+            context_id = request.query_params.get('context_id')
             participant_code = request.headers.get('participant')
-            experiment_id = request.headers.get('experiment_id')
+            experiment_id = request.query_params.get('experiment_id')
             experiment = Experiment.objects.get(id=experiment_id)
             participant = Participant.objects.get(participant_code=participant_code)
             context = Context.objects.get(id=context_id, experiment=experiment)

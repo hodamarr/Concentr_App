@@ -20,7 +20,8 @@ class CeleryTest(generics.GenericAPIView):
 
     def get(self, request):
         x, y = int(request.query_params.get('x')), int(request.query_params.get('y'))
-        update_celery_beat_schedule()
+        from application.models import Schedule
+        update_celery_beat_schedule(Schedule.objects.first())
         return HttpResponse(f'Success !')
 
 
