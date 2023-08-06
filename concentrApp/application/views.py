@@ -10,7 +10,6 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from dateutil import parser
 #from concentrApp.celery import add_task, get_day
-from .tasks import task
 import datetime
 
 class ReturnResponse():
@@ -360,6 +359,7 @@ class ParticipantSubmissionView(generics.GenericAPIView,
 
             participant = Participant.objects.get(
                 participant_code=participant_code)
+            experiment = ParticipantExperiment.objects.get(participant=participant).experiment
             context = Context.objects.get(id=context_id)
             question = Question.objects.get(id=question_id)
             answer = Answer.objects.get(id=answer_id)
@@ -368,7 +368,8 @@ class ParticipantSubmissionView(generics.GenericAPIView,
                 participant=participant,
                 context=context,
                 question=question,
-                answer=answer
+                answer=answer,
+                experiment=experiment
             )
             participant.score = participant.score + 10
 
@@ -503,12 +504,11 @@ class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateMode
 
     def get(self, request, *args, **kwargs):
         try:
-            context_id = request.data['context_id']
-            participant_code = request.data['participant']
-            experiment_id = request.data['experiment_id']
+            context_id = request.headers.get('context_id')
+            participant_code = request.headers.get('participant')
+            experiment_id = request.headers.get('experiment_id')
             experiment = Experiment.objects.get(id=experiment_id)
             participant = Participant.objects.get(participant_code=participant_code)
-            ParticipantExperiment.objects.get(experiment=experiment, participant=participant)
             context = Context.objects.get(id=context_id, experiment=experiment)
             result = QuestionCreateList()._init_dfs(context)
             return ReturnResponse.return_200_success_get(result)
@@ -516,3 +516,10 @@ class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateMode
             return ReturnResponse.return_400_bed_request(str(e))
         except Exception as e:
             return ReturnResponse.return_500_internal_server_error(str(e))
+
+class testcelery(generics.GenericAPIView, mixins.CreateModelMixin):
+    def get(self, request):
+        from concentrApp.application.tasks import notify as notify
+        x = request.query_params.get('x')
+        notify.apply_async(args=(x), countdown=20)
+        return Response(f'Success ! ')

@@ -61,6 +61,11 @@ urlpatterns = [
         'submission/data/',
         views.PartipantSubmissionGet.as_view(),
         name='submission_get'
+    ),
+    path(
+        'celery/',
+        views.testcelery.as_view(),
+        name='celery'
     )
 
     # path(

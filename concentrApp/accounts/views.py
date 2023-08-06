@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from rest_framework.permissions import AllowAny
+
 from .serializers import *
 from .models import *
 from django.contrib.auth import authenticate
@@ -7,6 +9,19 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .token import create_jwt_pair_for_user
+from django.http import HttpResponse
+from rest_framework.decorators import api_view
+from concentrApp.tasks import update_celery_beat_schedule
+
+
+class CeleryTest(generics.GenericAPIView):
+    authentication_classes = []  # remove authentication requirement
+    permission_classes = [AllowAny]  # allow any user to access the view
+
+    def get(self, request):
+        x, y = int(request.query_params.get('x')), int(request.query_params.get('y'))
+        update_celery_beat_schedule()
+        return HttpResponse(f'Success !')
 
 
 class SignUpView(generics.GenericAPIView):

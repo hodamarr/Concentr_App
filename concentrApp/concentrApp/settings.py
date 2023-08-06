@@ -31,8 +31,15 @@ ALLOWED_HOSTS = ['1.0.0.127.in-addr.arpa', 'localhost:8000', 'localhost', 'local
 
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
-# RedBeat Configuration
+CELERY_TIMEZONE = 'Asia/Jerusalem'
+CELERY_ENABLE_UTC=False
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BEAT_SCHEDULER = 'redbeat.RedBeatScheduler'
+REDBEAT_REDIS_URL = "redis://localhost:6379/1"
+redbeat_lock_key = None
+
 
 # Application definition
 
@@ -50,9 +57,10 @@ INSTALLED_APPS = [
     'application',
     'accounts',
     'rest_framework_simplejwt',
-    'redbeat',
-    'corsheaders',
     'django_celery_beat',
+    'corsheaders',
+    'celery',
+    'redbeat',
 ]
 
 SIMPLE_JWT = {
@@ -193,5 +201,3 @@ CORS_ORIGIN_WHITELIST = [
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
-
-redbeat_redis_url = "redis://localhost:6379/1"
