@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     'application',
     'accounts',
     'rest_framework_simplejwt',
-    'django_celery_beat',
     'corsheaders',
     'celery',
     'redbeat',

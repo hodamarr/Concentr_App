@@ -8,10 +8,12 @@ from rest_framework.permissions import (
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
-from concentrApp.tasks import create_celery_beat_schedule
+from concentrApp.beat_schedule import \
+    create_celery_beat_schedule
 
 
 class ReturnResponse():
+
     @staticmethod
     def return_201_success_post(data) -> Response:
         return Response({'data': data},
@@ -99,7 +101,7 @@ class ContextCreateView(generics.GenericAPIView, mixins.CreateModelMixin):
         return ReturnResponse.return_201_success_post(serializer.data)
 
     def get(self, request):
-        experiment_name = request.headers.get('experiment')
+        experiment_name = request.headers.get('experiment') or request.headers.get('Experiment')
         try:
             experiment = Experiment.objects.get(name=experiment_name)
             data = Context.objects.filter(experiment=experiment)
@@ -443,6 +445,7 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
                 schedule = Schedule.objects.create(participant=participant, experiment=experiment,
                                                 context=context, ping_times=_time)
                 schedule.save()
+
                 create_celery_beat_schedule(schedule)
             except Exception as e:
                 return Response({"messeage": e}, status=status.HTTP_400_BAD_REQUEST)
@@ -458,7 +461,7 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
                 item = Schedule.objects.get(participant=participant, ping_times=old_time)
                 item.ping_times = new_time
                 item.save()
-                create_celery_beat_schedule(item)
+                # update_celery_beat_schedule(item)
             return ReturnResponse.return_200_success_get("success")
         except Exception as e:
             return ReturnResponse.return_404_not_found(str(e))
@@ -482,9 +485,14 @@ class ScheduleListView(generics.GenericAPIView, mixins.CreateModelMixin):
         except Exception as e:
             return ReturnResponse.return_500_internal_server_error(str(e))
 
-
-    # add delete
-
+    def delete(self, request,*args, **kwargs):
+        try:
+            instance = Schedule.objects.get(id=kwargs['pk'])
+            # delete_celery_beat_schedule(instance)
+            instance.delete()
+            return ReturnResponse.return_200_success_get("deleted!")
+        except Exception as e:
+            return ReturnResponse.return_400_bed_request(str(e))
 
 # PARTICIPANT GET QUESTIONS
 class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateModelMixin):
@@ -506,10 +514,10 @@ class QuestionForParticipantsListView(generics.GenericAPIView, mixins.CreateMode
             return ReturnResponse.return_400_bed_request(str(e))
         except Exception as e:
             return ReturnResponse.return_500_internal_server_error(str(e))
-
-class testcelery(generics.GenericAPIView, mixins.CreateModelMixin):
-    def get(self, request):
-        from concentrApp.application.tasks import notify as notify
-        x = request.query_params.get('x')
-        notify.apply_async(args=(x), countdown=20)
-        return Response(f'Success ! ')
+#
+# class testcelery(generics.GenericAPIView, mixins.CreateModelMixin):
+#     def get(self, request):
+#         from concentrApp.application.tasks import notify as notify
+#         x = request.query_params.get('x')
+#         notify.apply_async(args=(x), countdown=20)
+#         return Response(f'Success ! ')
