@@ -1,7 +1,7 @@
 
 from redbeat import RedBeatSchedulerEntry
 from concentrApp.tasks import notify
-
+from concentrApp.celery import app
 from application.models import Schedule
 from celery.schedules import crontab
 from celery.schedules import crontab

@@ -29,7 +29,6 @@ class ExperimentListCreateViewTestCase(APITestCase):
         self.assertEqual(experiment.name, self.experiment_data['name'])
         self.assertEqual(experiment.description, self.experiment_data['description'])
 
-
     def test_update_experiment(self):
         experiment = Experiment.objects.create(
             exp_admin=self.user,
